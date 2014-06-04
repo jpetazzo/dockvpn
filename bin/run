@@ -183,7 +183,7 @@ EOF
 
 [ -d ${CLIENTNAME}.tblk ] || {
     mkdir ${CLIENTNAME}.tblk
-    mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh2048.pem ta.key ${CLIENTNAME}.tblk
+    mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh2048.pem keys/ta.key ${CLIENTNAME}.tblk
     zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
     zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
 }
