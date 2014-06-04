@@ -63,9 +63,9 @@ dev tun
 persist-key
 persist-tun
 ca keys/ca.crt
-cert keys/server.crt
-key keys/server.key  # This file should be kept secret
-dh keys/dh1024.pem
+cert keys/${SERVERNAME}.crt
+key keys/${SERVERNAME}.key  # This file should be kept secret
+dh keys/dh2048.pem
 tls-auth keys/ta.key 0 # This file is secret
 cipher BF-CBC        # Blowfish (default)
 comp-lzo
@@ -95,9 +95,9 @@ persist-key
 persist-tun
 
 ca keys/ca.crt
-cert keys/server.crt
-key keys/server.key  # This file should be kept secret
-dh keys/dh1024.pem
+cert keys/${SERVERNAME}.crt
+key keys/${SERVERNAME}.key  # This file should be kept secret
+dh keys/dh2048.pem
 tls-auth keys/ta.key 0 # This file is secret
 
 cipher BF-CBC        # Blowfish (default)
@@ -175,16 +175,18 @@ cat >>client.${CLIENTNAME}.combined.ovpn<<EOF
 `cat keys/ca.crt`
 </ca>
 <dh>
-`cat keys/dh.pem`
+`cat keys/dh2048.pem`
 </dh>
 
 EOF
 }
 
-mkdir ${CLIENTNAME}.tblk
-mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh.pem ta.key ${CLIENTNAME}.tblk
-zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
-zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
+[ -d ${CLIENTNAME}.tblk ] || {
+    mkdir ${CLIENTNAME}.tblk
+    mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh2048.pem ta.key ${CLIENTNAME}.tblk
+    zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
+    zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
+}
 
 [ -f client.${CLIENTNAME}.http ] || cat >client.${CLIENTNAME}.http <<EOF
 HTTP/1.0 200 OK
