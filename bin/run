@@ -33,15 +33,21 @@ export CLIENTNAMES="${CLIENTNAMES:-clash}"
 [ -d $KEY_DIR ] ||
     ./clean-all
 
-"$EASY_RSA/pkitool" --initca
-"$EASY_RSA/pkitool" --server "${SERVERNAME}"
-./build-dh
-openvpn --genkey --secret $KEY_DIR/ta.key
+[ -f $KEY_DIR/ca.crt ] ||
+    "$EASY_RSA/pkitool" --initca
+[ -f $KEY_DIR/${SERVERNAME}.crt ] ||
+    "$EASY_RSA/pkitool" --server "${SERVERNAME}"
+[ -f $KEY_DIR/dh2048.pem ] ||
+    ./build-dh
+[ -f $KEY_DIR/ta.key ] ||
+    openvpn --genkey --secret $KEY_DIR/ta.key
 
 for CLIENTNAME in $CLIENTNAMES
 do
-    "$EASY_RSA/pkitool" "${CLIENTNAME}"
-    openssl pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12
+    [ -f $KEY_DIR/${CLIENTNAME}.key ] ||
+        "$EASY_RSA/pkitool" "${CLIENTNAME}"
+    [ -f $KEY_DIR/${CLIENTNAME}.p12 ] ||
+        $OPENSSL pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12 -password pass:""
 done
 
 cd /etc/openvpn
