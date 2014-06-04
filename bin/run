@@ -180,6 +180,10 @@ cat >>client.${CLIENTNAME}.combined.ovpn<<EOF
 
 EOF )
 
+mkdir ${CLIENTNAME}.tblk
+mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh.pem ta.key ${CLIENTNAME}.tblk
+zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
+zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
 
 [ -f client.${CLIENTNAME}.http ] || cat >client.${CLIENTNAME}.http <<EOF
 HTTP/1.0 200 OK
