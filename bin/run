@@ -129,7 +129,7 @@ ping -c 1 -n $SERVERNAME && MY_IP_ADDR=$SERVERNAME
 
 for CLIENTNAME in $CLIENTNAMES
 do
-[ -f client.${CLIENTNAME}.ovpn ] || ( cat >client.${CLIENTNAME}.combined.ovpn <<EOF
+[ -f client.${CLIENTNAME}.ovpn ] || { cat >client.${CLIENTNAME}.combined.ovpn <<EOF
 client
 dev tun
 nobind
@@ -178,7 +178,8 @@ cat >>client.${CLIENTNAME}.combined.ovpn<<EOF
 `cat keys/dh.pem`
 </dh>
 
-EOF )
+EOF
+}
 
 mkdir ${CLIENTNAME}.tblk
 mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh.pem ta.key ${CLIENTNAME}.tblk
