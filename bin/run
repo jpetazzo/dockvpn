@@ -8,27 +8,27 @@ set -e
 
 cd /usr/share/easy-rsa/
 
-EASY_RSA="`pwd`"
-OPENSSL="openssl"
-PKCS11TOOL="pkcs11-tool"
-GREP="grep"
-KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
-KEY_DIR="/etc/openvpn/keys"
-PKCS11_MODULE_PATH="dummy"
-PKCS11_PIN="dummy"
+export EASY_RSA="`pwd`"
+export OPENSSL="openssl"
+export PKCS11TOOL="pkcs11-tool"
+export GREP="grep"
+export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
+export KEY_DIR="/etc/openvpn/keys"
+export PKCS11_MODULE_PATH="dummy"
+export PKCS11_PIN="dummy"
 
-KEY_SIZE=${KEY_SIZE:-2048}
-CA_EXPIRE=${CA_EXPIRE:-3650}
-KEY_EXPIRE=${KEY_EXPIRE:-3650}
-KEY_COUNTRY="${KEY_COUNTRY:-US}"
-KEY_PROVINCE="${KEY_PROVINCE:-CA}"
-KEY_CITY="${KEY_CITY:-SanFrancisco}"
-KEY_ORG="${KEY_ORG:-Fort-Funston}"
-KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
-KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
-KEY_NAME="${KEY_NAME:-EasyRSA}"
-SERVERNAME="${SERVERNAME:-dockvpn}"
-CLIENTNAMES="${CLIENTNAMES:-clash}"
+export KEY_SIZE=${KEY_SIZE:-2048}
+export CA_EXPIRE=${CA_EXPIRE:-3650}
+export KEY_EXPIRE=${KEY_EXPIRE:-3650}
+export KEY_COUNTRY="${KEY_COUNTRY:-US}"
+export KEY_PROVINCE="${KEY_PROVINCE:-CA}"
+export KEY_CITY="${KEY_CITY:-SanFrancisco}"
+export KEY_ORG="${KEY_ORG:-Fort-Funston}"
+export KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
+export KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
+export KEY_NAME="${KEY_NAME:-EasyRSA}"
+export SERVERNAME="${SERVERNAME:-dockvpn}"
+export CLIENTNAMES="${CLIENTNAMES:-clash}"
 
 "$EASY_RSA/pkitool" --initca
 "$EASY_RSA/pkitool" --server "${SERVERNAME}"
