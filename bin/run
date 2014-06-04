@@ -30,6 +30,8 @@ export KEY_NAME="${KEY_NAME:-EasyRSA}"
 export SERVERNAME="${SERVERNAME:-dockvpn}"
 export CLIENTNAMES="${CLIENTNAMES:-clash}"
 
+mkdir -p $KEY_DIR
+
 "$EASY_RSA/pkitool" --initca
 "$EASY_RSA/pkitool" --server "${SERVERNAME}"
 ./build-dh
