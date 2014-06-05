@@ -46,8 +46,8 @@ for CLIENTNAME in $CLIENTNAMES
 do
     [ -f $KEY_DIR/${CLIENTNAME}.key ] ||
         "$EASY_RSA/pkitool" "${CLIENTNAME}"
-    [ -f $KEY_DIR/${CLIENTNAME}.p12 ] ||
-        $OPENSSL pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12 -password pass:""
+#    [ -f $KEY_DIR/${CLIENTNAME}.p12 ] ||
+#        $OPENSSL pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12 -password pass:""
 done
 
 cd /etc/openvpn
