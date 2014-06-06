@@ -1,4 +1,4 @@
-FROM clashthebunny/debian-armel:jessie
+FROM ubuntu:trusty
 MAINTAINER randall@mason.ch
 
 RUN apt-get update -q
