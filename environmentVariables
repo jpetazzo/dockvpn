@@ -1,0 +1,1 @@
+grep -i "=\"\?\${" bin/run | sed -e 's/^\W\+//g' | cut -d = -f 1 | sed -s -e 's/^/-e "/g' -e 's/$/=\<something\>" \\/g'

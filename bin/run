@@ -6,53 +6,43 @@ set -e
 [ -c /dev/net/tun ] ||
     mknod /dev/net/tun c 10 200
 
-cd /usr/share/easy-rsa/
+cd /etc/openvpn/
 
-export EASY_RSA="`pwd`"
-export OPENSSL="openssl"
-export PKCS11TOOL="pkcs11-tool"
-export GREP="grep"
-export KEY_CONFIG="$EASY_RSA/openssl-1.0.0.cnf"
-export KEY_DIR="/etc/openvpn/keys"
-export PKCS11_MODULE_PATH="dummy"
-export PKCS11_PIN="dummy"
+SERVER_TCP_PORT=${SERVER_TCP_PORT:-443}
+SERVER_UDP_PORT=${SERVER_UDP_PORT:-1194}
 
-export KEY_SIZE=${KEY_SIZE:-2048}
-export CA_EXPIRE=${CA_EXPIRE:-3650}
-export KEY_EXPIRE=${KEY_EXPIRE:-3650}
-export KEY_COUNTRY="${KEY_COUNTRY:-US}"
-export KEY_PROVINCE="${KEY_PROVINCE:-CA}"
-export KEY_CITY="${KEY_CITY:-SanFrancisco}"
-export KEY_ORG="${KEY_ORG:-Fort-Funston}"
-export KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
-export KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
-export KEY_NAME="${KEY_NAME:-EasyRSA}"
-export SERVERNAME="${SERVERNAME:-dockvpn}"
-export CLIENTNAMES="${CLIENTNAMES:-clash}"
+EASY_RSA="/usr/share/easy-rsa/"
+OPENSSL="openssl"
+PKCS11TOOL="pkcs11-tool"
+GREP="grep"
+KEY_CONFIG="$EASY_RSA/openssl-1.0.0.cnf"
+KEY_DIR="/etc/openvpn/keys"
+PKCS11_MODULE_PATH="dummy"
+PKCS11_PIN="dummy"
+
+KEY_SIZE=${KEY_SIZE:-2048}
+CA_EXPIRE=${CA_EXPIRE:-3650}
+KEY_EXPIRE=${KEY_EXPIRE:-3650}
+KEY_COUNTRY="${KEY_COUNTRY:-US}"
+KEY_PROVINCE="${KEY_PROVINCE:-CA}"
+KEY_CITY="${KEY_CITY:-SanFrancisco}"
+KEY_ORG="${KEY_ORG:-Fort-Funston}"
+KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
+KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
+KEY_NAME="${KEY_NAME:-EasyRSA}"
+SERVERNAME="${SERVERNAME:-dockvpn}"
+CLIENTNAMES="${CLIENTNAMES:-clash}"
 
 [ -d $KEY_DIR ] ||
-    ./clean-all
-
+    $EASY_RSA/clean-all
 [ -f $KEY_DIR/ca.crt ] ||
     "$EASY_RSA/pkitool" --initca
 [ -f $KEY_DIR/${SERVERNAME}.crt ] ||
     "$EASY_RSA/pkitool" --server "${SERVERNAME}"
 [ -f $KEY_DIR/dh${KEY_SIZE}.pem ] ||
-    ./build-dh
+    $EASY_RSA/build-dh
 [ -f $KEY_DIR/ta.key ] ||
     openvpn --genkey --secret $KEY_DIR/ta.key
-
-for CLIENTNAME in $CLIENTNAMES
-do
-    [ -f $KEY_DIR/${CLIENTNAME}.key ] ||
-        "$EASY_RSA/pkitool" "${CLIENTNAME}"
-#    [ -f $KEY_DIR/${CLIENTNAME}.p12 ] ||
-#        $OPENSSL pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12 -password pass:""
-done
-
-cd /etc/openvpn
-SERVER_TCP_PORT=${SERVER_TCP_PORT:-443}
-SERVER_UDP_PORT=${SERVER_UDP_PORT:-1194}
 
 [ -f server.udp.conf ] || cat >server.udp.conf <<EOF
 mode server
@@ -62,11 +52,11 @@ proto udp
 dev tun
 persist-key
 persist-tun
-ca keys/ca.crt
-cert keys/${SERVERNAME}.crt
-key keys/${SERVERNAME}.key  # This file should be kept secret
-dh keys/dh${KEY_SIZE}.pem
-tls-auth keys/ta.key 0 # This file is secret
+ca ${KEY_DIR}/ca.crt
+cert ${KEY_DIR}/${SERVERNAME}.crt
+key ${KEY_DIR}/${SERVERNAME}.key  # This file should be kept secret
+dh ${KEY_DIR}/dh${KEY_SIZE}.pem
+tls-auth ${KEY_DIR}/ta.key 0 # This file is secret
 cipher BF-CBC        # Blowfish (default)
 comp-lzo
 topology subnet
@@ -94,11 +84,11 @@ dev tun
 persist-key
 persist-tun
 
-ca keys/ca.crt
-cert keys/${SERVERNAME}.crt
-key keys/${SERVERNAME}.key  # This file should be kept secret
-dh keys/dh${KEY_SIZE}.pem
-tls-auth keys/ta.key 0 # This file is secret
+ca ${KEY_DIR}/ca.crt
+cert ${KEY_DIR}/${SERVERNAME}.crt
+key ${KEY_DIR}/${SERVERNAME}.key  # This file should be kept secret
+dh ${KEY_DIR}/dh${KEY_SIZE}.pem
+tls-auth ${KEY_DIR}/ta.key 0 # This file is secret
 
 cipher BF-CBC        # Blowfish (default)
 comp-lzo
@@ -129,6 +119,10 @@ ping -c 1 -n $SERVERNAME && MY_IP_ADDR=$SERVERNAME
 
 for CLIENTNAME in $CLIENTNAMES
 do
+    [ -f $KEY_DIR/${CLIENTNAME}.key ] ||
+        "$EASY_RSA/pkitool" "${CLIENTNAME}"
+    [ -f $KEY_DIR/${CLIENTNAME}.p12 ] ||
+        $OPENSSL pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12 -password pass:""
 [ -f client.${CLIENTNAME}.ovpn ] || { cat >client.${CLIENTNAME}.combined.ovpn <<EOF
 client
 dev tun
@@ -166,16 +160,16 @@ EOF
 
 cat >>client.${CLIENTNAME}.combined.ovpn<<EOF
 <key>
-`cat keys/$CLIENTNAME.key`
+`cat ${KEY_DIR}/$CLIENTNAME.key`
 </key>
 <cert>
-`cat keys/$CLIENTNAME.crt`
+`cat ${KEY_DIR}/$CLIENTNAME.crt`
 </cert>
 <ca>
-`cat keys/ca.crt`
+`cat ${KEY_DIR}/ca.crt`
 </ca>
 <dh>
-`cat keys/dh${KEY_SIZE}.pem`
+`cat ${KEY_DIR}/dh${KEY_SIZE}.pem`
 </dh>
 
 EOF
@@ -183,7 +177,7 @@ EOF
 
 [ -d ${CLIENTNAME}.tblk ] || {
     mkdir ${CLIENTNAME}.tblk
-    mv client.${CLIENTNAME}.ovpn keys/$CLIENTNAME.key keys/$CLIENTNAME.crt keys/ca.crt keys/dh${KEY_SIZE}.pem keys/ta.key ${CLIENTNAME}.tblk
+    mv client.${CLIENTNAME}.ovpn ${KEY_DIR}/$CLIENTNAME.key ${KEY_DIR}/$CLIENTNAME.crt ${KEY_DIR}/ca.crt ${KEY_DIR}/dh${KEY_SIZE}.pem ${KEY_DIR}/ta.key ${CLIENTNAME}.tblk
     zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
     zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
 }
@@ -191,7 +185,7 @@ EOF
 [ -f client.${CLIENTNAME}.http ] || cat >client.${CLIENTNAME}.http <<EOF
 HTTP/1.0 200 OK
 Content-Type: application/x-openvpn-profile
-Content-Length: `wc -c client.${CLIENTNAME}.combined.ovpn`
+Content-Length: `wc -c client.${CLIENTNAME}.combined.ovpn | awk '{print $1}' `
 
 `cat client.${CLIENTNAME}.combined.ovpn`
 EOF
