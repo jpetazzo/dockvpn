@@ -1,8 +1,7 @@
 #!/bin/bash 
 
-sudo git pull && sudo chown -R rmason:rmason . 
-
-docker build -t="clashthebunny/dockvpn:0.1-$(dpkg --print-architecture 2>/dev/null || echo amd64)" .
+TAG="clashthebunny/dockvpn:0.1-$(dpkg --print-architecture 2>/dev/null || echo amd64)"
+docker build -t="$TAG" .
 
 # create a container that's just saving the state of /etc/openvpn/
 # this won't overwrite something that exists
@@ -27,7 +26,8 @@ docker run -d --privileged --volumes-from OpenVPN-Config --name dockvpn         
  -e "KEY_NAME=DockVpN"                         `# This is the name of this system`     \
  -e "SERVERNAME=$(uname -n)"                   `# the hostname of the server, external`\
  -e "CLIENTNAMES=randall android iphone"       `# space seperated list of clients`     \
- clashthebunny/dockvpn:0.1-$(dpkg --print-architecture 2>/dev/null || echo amd64) bash -c 'bash -x $(which run)'
+ "$TAG" bash -c 'bash -x $(which run)'
 
 echo "now get your config files from here:"
-echo $(docker inspect OpenVPN-Config | python -c 'import json,fileinput; print json.loads("".join(fileinput.input()))[0]["Volumes"]["/etc/openvpn"]')
+#echo $(docker inspect OpenVPN-Config | python -c 'import json,fileinput; print json.loads("".join(fileinput.input()))[0]["Volumes"]["/etc/openvpn"]')
+echo $(docker inspect OpenVPN-Config | grep -A1 Volumes | cut -d \" -f 4 | grep "\/")
