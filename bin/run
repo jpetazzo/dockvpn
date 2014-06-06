@@ -11,27 +11,27 @@ cd /etc/openvpn/
 SERVER_TCP_PORT=${SERVER_TCP_PORT:-443}
 SERVER_UDP_PORT=${SERVER_UDP_PORT:-1194}
 
-EASY_RSA="/usr/share/easy-rsa/"
-OPENSSL="openssl"
-PKCS11TOOL="pkcs11-tool"
-GREP="grep"
-KEY_CONFIG="$EASY_RSA/openssl-1.0.0.cnf"
-KEY_DIR="/etc/openvpn/keys"
-PKCS11_MODULE_PATH="dummy"
-PKCS11_PIN="dummy"
+export EASY_RSA="/usr/share/easy-rsa/"
+export OPENSSL="openssl"
+export PKCS11TOOL="pkcs11-tool"
+export GREP="grep"
+export KEY_CONFIG="$EASY_RSA/openssl-1.0.0.cnf"
+export KEY_DIR="/etc/openvpn/keys"
+export PKCS11_MODULE_PATH="dummy"
+export PKCS11_PIN="dummy"
 
-KEY_SIZE=${KEY_SIZE:-2048}
-CA_EXPIRE=${CA_EXPIRE:-3650}
-KEY_EXPIRE=${KEY_EXPIRE:-3650}
-KEY_COUNTRY="${KEY_COUNTRY:-US}"
-KEY_PROVINCE="${KEY_PROVINCE:-CA}"
-KEY_CITY="${KEY_CITY:-SanFrancisco}"
-KEY_ORG="${KEY_ORG:-Fort-Funston}"
-KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
-KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
-KEY_NAME="${KEY_NAME:-EasyRSA}"
-SERVERNAME="${SERVERNAME:-dockvpn}"
-CLIENTNAMES="${CLIENTNAMES:-clash}"
+export KEY_SIZE=${KEY_SIZE:-2048}
+export CA_EXPIRE=${CA_EXPIRE:-3650}
+export KEY_EXPIRE=${KEY_EXPIRE:-3650}
+export KEY_COUNTRY="${KEY_COUNTRY:-US}"
+export KEY_PROVINCE="${KEY_PROVINCE:-CA}"
+export KEY_CITY="${KEY_CITY:-SanFrancisco}"
+export KEY_ORG="${KEY_ORG:-Fort-Funston}"
+export KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
+export KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
+export KEY_NAME="${KEY_NAME:-EasyRSA}"
+export SERVERNAME="${SERVERNAME:-dockvpn}"
+export CLIENTNAMES="${CLIENTNAMES:-clash}"
 
 [ -d $KEY_DIR ] ||
     $EASY_RSA/clean-all
@@ -106,6 +106,7 @@ status openvpn-status.tcp.log
 verb 3
 EOF
 
+[ "$MY_IP_ADDR" ] || {
 ping -c 1 -n $SERVERNAME && MY_IP_ADDR=$SERVERNAME
 [ "$MY_IP_ADDR" ] || {
   MY_IP_ADDR=${MY_IP_ADDR:-$(curl -s http://myip.enix.org/REMOTE_ADDR)}
@@ -115,6 +116,7 @@ ping -c 1 -n $SERVERNAME && MY_IP_ADDR=$SERVERNAME
     echo "for that purpose.)"
     exit 1
   }
+}
 }
 
 for CLIENTNAME in $CLIENTNAMES
@@ -177,7 +179,8 @@ EOF
 
 [ -d ${CLIENTNAME}.tblk ] || {
     mkdir ${CLIENTNAME}.tblk
-    mv client.${CLIENTNAME}.ovpn ${KEY_DIR}/$CLIENTNAME.key ${KEY_DIR}/$CLIENTNAME.crt ${KEY_DIR}/ca.crt ${KEY_DIR}/dh${KEY_SIZE}.pem ${KEY_DIR}/ta.key ${CLIENTNAME}.tblk
+    mv client.${CLIENTNAME}.ovpn ${CLIENTNAME}.tblk
+    cp ${KEY_DIR}/$CLIENTNAME.key ${KEY_DIR}/$CLIENTNAME.crt ${KEY_DIR}/ca.crt ${KEY_DIR}/dh${KEY_SIZE}.pem ${KEY_DIR}/ta.key ${CLIENTNAME}.tblk
     zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
     zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
 }

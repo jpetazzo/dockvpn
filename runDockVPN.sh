@@ -1,26 +1,35 @@
-docker build -t="dockvpn" .          # Build this Dockerfile
+#!/bin/bash 
+
+sudo git pull && sudo chown -R rmason:rmason . 
+
+docker build -t="clashthebunny/dockvpn:0.1-armel" .
 
 # create a container that's just saving the state of /etc/openvpn/
 # this won't overwrite something that exists
-docker ps -a | grep -q OpenVpn-Config || docker run -v /etc/openvpn/ --name OpenVPN-Config busybox true
+docker ps -a | grep -q OpenVPN-Config || docker run -v /etc/openvpn/ --name OpenVPN-Config busybox true
 
 # delete any old builds
 docker stop dockvpn; docker rm dockvpn
 
 # run this new build
-docker run -d --privileged --volumes-from OpenVPN-Config --name dockvpn \
- -e "SERVER_TCP_PORT=1197" \
- -e "SERVER_UDP_PORT=1197" \
- -e "KEY_SIZE=2048" \
- -e "CA_EXPIRE=3650" \
- -e "KEY_EXPIRE=3650" \
- -e "KEY_COUNTRY=US" \
- -e "KEY_PROVINCE=Massachusetts" \
- -e "KEY_CITY=Boston" \
- -e "KEY_ORG=MasonFamily" \
- -e "KEY_EMAIL=randall@mason.ch" \
- -e "KEY_OU=TheITGuy" \
- -e "KEY_NAME=DockVpN" \
- -e "SERVERNAME=vpn3.boston.mason.ch" \
- -e "CLIENTNAMES=\"randall android iphone\"" \
- dockvpn run
+docker run -d --privileged --volumes-from OpenVPN-Config --name dockvpn                \
+ -e "SERVER_TCP_PORT=1197"                     `# some unused port`                    \
+ -e "SERVER_UDP_PORT=1197"                     `# same or different from above`        \
+ -e "KEY_SIZE=2048"                            `# 2048 ought to be enough for anybody` \
+ -e "CA_EXPIRE=3650"                           `# 10 years`                            \
+ -e "KEY_EXPIRE=3650"                          `# still 10 years`                      \
+ -e "KEY_COUNTRY=US"                           `# where are you`                       \
+ -e "KEY_PROVINCE=Massachusetts"               `# no, really, where are you`           \
+ -e "KEY_CITY=Boston"                          `# no, exactly, where are you`          \
+ -e "KEY_ORG=MasonFamily"                      `# and where do you work`               \
+ -e "KEY_EMAIL=randall@mason.ch"               `# and how can you be reached?`         \
+ -e "KEY_OU=TheITGuy"                          `# IT, as disfunctional as that is`     \
+ -e "KEY_NAME=DockVpN"                         `# This is the name of this system`     \
+ -e "SERVERNAME=timeru.mason.ch"               `# the hostname of the server, external`\
+ -e "CLIENTNAMES=randall android iphone"       `# space seperated list of clients`     \
+ -e "MY_IP_ADDR=192.168.128.138"               `# The server\'s IP, if all else fails` \
+ clashthebunny/dockvpn:0.1-armel bash -c 'bash -x $(which run)'
+
+echo "now get your config files from here:"
+sudo ls -lah $(docker inspect OpenVPN-Config | python -c 'import json,fileinput; print json.loads("".join(fileinput.input()))[0]["Volumes"]["/etc/openvpn"]')
+echo $(docker inspect OpenVPN-Config | python -c 'import json,fileinput; print json.loads("".join(fileinput.input()))[0]["Volumes"]["/etc/openvpn"]')
