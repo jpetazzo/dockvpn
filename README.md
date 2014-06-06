@@ -12,6 +12,12 @@ are stored and you should get those (SECURELY!!!) to your local directory:
 ```bash
 rsync -avH --rsync-path="sudo rsync" userWithSudo@dockerHost:<directoryFromScript>/ OpenVPN-Config/
 ```
+or
+```bash
+docker run -rm --volumes-from OpenVPN-Config busybox tar cvf - /etc/openvpn/ \
+    | ssh mobile@jailBrokeniPhone "mkdir OpenVPN-Config; tar -xvf - -C OpenVPN-Config/"
+```
+
 then you can directly import those files into Ubuntu's Network Manager,
 TunnelBlick, iPhone or Android's OpenVPN Connect, or pretty much anywhere.
 
