@@ -1,0 +1,32 @@
+client
+dev tun
+nobind
+resolv-retry infinite
+persist-key
+persist-tun
+
+cipher BF-CBC
+comp-lzo
+passtos
+mssfix
+verb 3
+
+redirect-gateway def1
+
+<key>
+$CLIENT_KEY
+</key>
+<cert>
+$CLIENT_CRT
+</cert>
+<ca>
+$CA_CRT
+</ca>
+<dh>
+$DH_PARAMS
+</dh>
+key-direction 1
+<tls-auth>
+$TA_KEY
+</tls-auth>
+

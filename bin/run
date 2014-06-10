@@ -6,17 +6,17 @@ set -e
 [ -c /dev/net/tun ] ||
     mknod /dev/net/tun c 10 200
 
-cd /etc/openvpn/
+CONFIG_DIR=${CONFIG_DIR:-/etc/openvpn}
+SCRIPT_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 
-SERVER_TCP_PORT=${SERVER_TCP_PORT:-443}
-SERVER_UDP_PORT=${SERVER_UDP_PORT:-1194}
+cd ${CONFIG_DIR}
 
 export EASY_RSA="/usr/share/easy-rsa/"
 export OPENSSL="openssl"
 export PKCS11TOOL="pkcs11-tool"
 export GREP="grep"
 export KEY_CONFIG="$EASY_RSA/openssl-1.0.0.cnf"
-export KEY_DIR="/etc/openvpn/keys"
+export KEY_DIR="$CONFIG_DIR/keys"
 export PKCS11_MODULE_PATH="dummy"
 export PKCS11_PIN="dummy"
 
@@ -30,174 +30,119 @@ export KEY_ORG="${KEY_ORG:-Fort-Funston}"
 export KEY_EMAIL="${KEY_EMAIL:-me@myhost.mydomain}"
 export KEY_OU="${KEY_OU:-MyOrganizationalUnit}"
 export KEY_NAME="${KEY_NAME:-EasyRSA}"
-export SERVERNAME="${SERVERNAME:-dockvpn}"
+export SERVER_NAME="${SERVER_NAME:-$(uname -n)}"
 export CLIENTNAMES="${CLIENTNAMES:-clash}"
 
 [ -d $KEY_DIR ] ||
     $EASY_RSA/clean-all
+
 [ -f $KEY_DIR/ca.crt ] ||
     "$EASY_RSA/pkitool" --initca
-[ -f $KEY_DIR/${SERVERNAME}.crt ] ||
-    "$EASY_RSA/pkitool" --server "${SERVERNAME}"
+export CA_CRT=$(< $KEY_DIR/ca.crt )
+
+[ -f $KEY_DIR/${SERVER_NAME}.crt ] ||
+    "$EASY_RSA/pkitool" --server "${SERVER_NAME}"
+
 [ -f $KEY_DIR/dh${KEY_SIZE}.pem ] ||
     $EASY_RSA/build-dh
+export DH_PARAMS=$(< $KEY_DIR/dh${KEY_SIZE}.pem)
+
 [ -f $KEY_DIR/ta.key ] ||
     openvpn --genkey --secret $KEY_DIR/ta.key
+export TA_KEY=$(< $KEY_DIR/ta.key)
 
-[ -f server.udp.conf ] || cat >server.udp.conf <<EOF
-mode server
-tls-server
-port ${SERVER_UDP_PORT}
-proto udp
-dev tun
-persist-key
-persist-tun
-ca ${KEY_DIR}/ca.crt
-cert ${KEY_DIR}/${SERVERNAME}.crt
-key ${KEY_DIR}/${SERVERNAME}.key  # This file should be kept secret
-dh ${KEY_DIR}/dh${KEY_SIZE}.pem
-tls-auth ${KEY_DIR}/ta.key 0 # This file is secret
-cipher BF-CBC        # Blowfish (default)
-comp-lzo
-topology subnet
-server 192.168.255.128 255.255.255.128
-ifconfig-pool-persist ipp.udp.txt
-push "dhcp-option DNS 8.8.8.8"
-push "redirect-gateway def1 bypass-dhcp"
-max-clients 20
-client-to-client
-user nobody
-group nogroup
-keepalive 10 120
-status openvpn-status.udp.log
-verb 3
-EOF
-
-
-
-[ -f server.tcp.conf ] || cat >server.tcp.conf <<EOF
-mode server
-tls-server
-port ${SERVER_TCP_PORT}
-proto tcp
-dev tun
-persist-key
-persist-tun
-
-ca ${KEY_DIR}/ca.crt
-cert ${KEY_DIR}/${SERVERNAME}.crt
-key ${KEY_DIR}/${SERVERNAME}.key  # This file should be kept secret
-dh ${KEY_DIR}/dh${KEY_SIZE}.pem
-tls-auth ${KEY_DIR}/ta.key 0 # This file is secret
-
-cipher BF-CBC        # Blowfish (default)
-comp-lzo
-topology subnet
-server 192.168.255.0 255.255.255.128
-ifconfig-pool-persist ipp.tcp.txt
-push "dhcp-option DNS 8.8.8.8"
-push "redirect-gateway def1 bypass-dhcp"
-max-clients 20 
-client-to-client
-user nobody
-group nogroup
-keepalive 10 120
-status openvpn-status.tcp.log
-verb 3
-EOF
-
-[ "$MY_IP_ADDR" ] || {
-ping -c 1 -n $SERVERNAME && MY_IP_ADDR=$SERVERNAME
-[ "$MY_IP_ADDR" ] || {
-  MY_IP_ADDR=${MY_IP_ADDR:-$(curl -s http://myip.enix.org/REMOTE_ADDR)}
-  [ "$MY_IP_ADDR" ] || {
-    echo "Sorry, I could not figure out my public IP address."
-    echo "(I use ether $SERVERNAME or http://myip.enix.org/REMOTE_ADDR/"
-    echo "for that purpose.)"
-    exit 1
+[ "$SERVER_IP" ] || {
+  SERVER_IP=$(upnpc -u "$UPNP_URL" -r $SERVER_PORT $SERVER_PROTO | grep ExternalIPAddress | tr -d ' ' | cut -d = -f 2)
+  [ "$SERVER_IP" ] || {
+    ping -c 1 -n $SERVER_NAME && SERVER_IP=$SERVER_NAME
+    [ "$SERVER_IP" ] || {
+      SERVER_IP=${SERVER_IP:-$(curl -s http://myip.enix.org/REMOTE_ADDR)}
+      [ "$SERVER_IP" ] || {
+        # TODO: add upnp discovery and pagekite/localtunnel/ngrok
+        echo "Sorry, I could not figure out my public IP address."
+        echo "(I use $SERVER_NAME, http://myip.enix.org/REMOTE_ADDR/,"
+        echo "or UPnP for that purpose.)"
+        exit 1
+    }
   }
 }
-}
+export SERVER_IP
+
+cat $SCRIPT_PATH/server_stanza.template | envsubst > ${SERVER_NAME}-${SERVER_IP}-${SERVER_PROTO}-${SERVER_PORT}.servers
 
 for CLIENTNAME in $CLIENTNAMES
 do
+    export CLIENTNAME
     [ -f $KEY_DIR/${CLIENTNAME}.key ] ||
         "$EASY_RSA/pkitool" "${CLIENTNAME}"
+    export CLIENT_KEY=$(< $KEY_DIR/$CLIENTNAME.key)
+    export CLIENT_CRT=$(< $KEY_DIR/$CLIENTNAME.crt)
+
     [ -f $KEY_DIR/${CLIENTNAME}.p12 ] ||
         $OPENSSL pkcs12 -export -inkey $KEY_DIR/$CLIENTNAME.key -in $KEY_DIR/$CLIENTNAME.crt -certfile $KEY_DIR/ca.crt -out $KEY_DIR/$CLIENTNAME.p12 -password pass:""
-[ -f client.${CLIENTNAME}.ovpn ] || { cat >client.${CLIENTNAME}.combined.ovpn <<EOF
-client
-dev tun
-nobind
-resolv-retry infinite
-persist-key
-persist-tun
+    # if we wanted a new config only when we first run, but the port and IP may change, so regenerate anyhow
+    #[ -f client.${CLIENTNAME}.ovpn ] || {
+    {
 
-cipher BF-CBC
-comp-lzo
-passtos
-mssfix
-verb 3
+        cat $SCRIPT_PATH/client.combined.template | envsubst > client.${CLIENTNAME}.combined.ovpn
+        cat $SCRIPT_PATH/client.template          | envsubst > client.${CLIENTNAME}.ovpn
+        # Add in each server template to the bottom of the config, newest first for only the current server:
+        # for SERVER_STANZA in "$(ls -t ${SERVER_NAME}*servers)"
+        # Add in each server template to the bottom of the config, newest first for all servers using this same OpenVPN-Config:
+        for SERVER_STANZA in "$(ls -t *servers)"
+        do
+            cat $SERVER_STANZA >> client.${CLIENTNAME}.combined.ovpn
+            cat $SERVER_STANZA >> client.${CLIENTNAME}.ovpn
+        done
 
-redirect-gateway def1
+    }
 
-<connection>
-remote $MY_IP_ADDR ${SERVER_UDP_PORT} udp
-</connection>
+    #[ -d ${CLIENTNAME}.tblk ] || {
+    {
+        mkdir -p ${CLIENTNAME}.tblk
+        mv client.${CLIENTNAME}.ovpn ${CLIENTNAME}.tblk
+        cp ${KEY_DIR}/$CLIENTNAME.key ${KEY_DIR}/$CLIENTNAME.crt ${KEY_DIR}/ca.crt ${KEY_DIR}/dh${KEY_SIZE}.pem ${KEY_DIR}/ta.key ${CLIENTNAME}.tblk
+        zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
+        zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
+    }
 
-<connection>
-remote $MY_IP_ADDR ${SERVER_TCP_PORT} tcp-client
-</connection>
-EOF
-
-cp client.${CLIENTNAME}.combined.ovpn client.${CLIENTNAME}.ovpn
-
-cat >>client.${CLIENTNAME}.ovpn<<EOF
-
-ca ca.crt
-cert ${CLIENTNAME}.crt
-key ${CLIENTNAME}.key
-tls-auth ta.key 1
-EOF
-
-cat >>client.${CLIENTNAME}.combined.ovpn<<EOF
-<key>
-`cat ${KEY_DIR}/$CLIENTNAME.key`
-</key>
-<cert>
-`cat ${KEY_DIR}/$CLIENTNAME.crt`
-</cert>
-<ca>
-`cat ${KEY_DIR}/ca.crt`
-</ca>
-<dh>
-`cat ${KEY_DIR}/dh${KEY_SIZE}.pem`
-</dh>
-
-EOF
-}
-
-[ -d ${CLIENTNAME}.tblk ] || {
-    mkdir ${CLIENTNAME}.tblk
-    mv client.${CLIENTNAME}.ovpn ${CLIENTNAME}.tblk
-    cp ${KEY_DIR}/$CLIENTNAME.key ${KEY_DIR}/$CLIENTNAME.crt ${KEY_DIR}/ca.crt ${KEY_DIR}/dh${KEY_SIZE}.pem ${KEY_DIR}/ta.key ${CLIENTNAME}.tblk
-    zip -r ${CLIENTNAME}.tblk.zip ${CLIENTNAME}.tblk
-    zip -jr ${CLIENTNAME}.zip ${CLIENTNAME}.tblk
-}
-
-[ -f client.${CLIENTNAME}.http ] || cat >client.${CLIENTNAME}.http <<EOF
-HTTP/1.0 200 OK
-Content-Type: application/x-openvpn-profile
-Content-Length: `wc -c client.${CLIENTNAME}.combined.ovpn | awk '{print $1}' `
-
-`cat client.${CLIENTNAME}.combined.ovpn`
-EOF
+#    #[ -f client.${CLIENTNAME}.http ] || cat >client.${CLIENTNAME}.http <<EOF
+#    [ 0 ] || cat >client.${CLIENTNAME}.http <<EOF
+#    HTTP/1.0 200 OK
+#    Content-Type: application/x-openvpn-profile
+#    Content-Length: $(wc -c client.${CLIENTNAME}.combined.ovpn | awk '{print $1}' )
+#
+#    $(cat client.${CLIENTNAME}.combined.ovpn)
+#EOF
 
 done
 
-iptables -t nat -A POSTROUTING -s 192.168.255.0/24 -o eth0 -j MASQUERADE
+set -x
 
-touch tcp.log udp.log http8080.log
-while true ; do openvpn server.tcp.conf; done >> tcp.log &
-while true ; do openvpn server.udp.conf; done >> udp.log &
-tail -F *.log
+iptables -t nat -A POSTROUTING -s ${SERVER_NETWORK:-192.168.255.128}/${SERVER_NETMASK:-255.255.255.128} -o eth0 -j MASQUERADE
+
+openvpn \
+  --ca ${KEY_DIR}/ca.crt \
+  --cert ${KEY_DIR}/${SERVER_NAME}.crt \
+  --key ${KEY_DIR}/${SERVER_NAME}.key \
+  --dh ${KEY_DIR}/dh${KEY_SIZE}.pem \
+  --tls-auth ${KEY_DIR}/ta.key 0 \
+  --port ${SERVER_PORT:-1194} \
+  --proto ${SERVER_PROTO:-udp} \
+  --dev ${SERVER_DEV:-tun} \
+  --topology ${SERVER_TOPOLOGY:-subnet} \
+  --server ${SERVER_NETWORK:-192.168.255.128} ${SERVER_NETMASK:-255.255.255.128} \
+  --push "dhcp-option DNS ${DNS_SERVER:-8.8.8.8}" \
+  --max-clients ${SERVER_MAX_CLIENTS:-20} \
+  --ifconfig-pool-persist ipp.${SERVER_PROTO:-udp}.txt \
+  --push "redirect-gateway def1 bypass-dhcp" \
+  --persist-key \
+  --persist-tun \
+  --comp-lzo \
+  --mode server \
+  --tls-server \
+  --user ${SERVER_USER:-nobody} \
+  --group ${SERVER_GROUP:-nogroup} \
+  --keepalive 10 120 \
+  --status openvpn-status.udp.log \
+  --verb 3

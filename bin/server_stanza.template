@@ -1,0 +1,7 @@
+
+<connection>
+remote $SERVER_IP ${SERVER_PORT} ${SERVER_PROTO}
+</connection>
+<connection>
+remote $SERVER_NAME ${SERVER_PORT} ${SERVER_PROTO}
+</connection>
