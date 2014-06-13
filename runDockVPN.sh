@@ -57,4 +57,5 @@ docker run --privileged -t -i --volumes-from OpenVPN-Config                     
 
 echo "now get your config files from here:"
 #echo $(docker inspect OpenVPN-Config | python -c 'import json,fileinput; print json.loads("".join(fileinput.input()))[0]["Volumes"]["/etc/openvpn"]')
-echo $(docker inspect OpenVPN-Config | grep -A1 Volumes | cut -d \" -f 4 | grep "\/")
+#echo $(docker inspect OpenVPN-Config | grep -A1 Volumes | cut -d \" -f 4 | grep "\/")
+echo $(docker inspect -f "{{ .Volumes }}" OpenVPN-Config | cut -d : -f 2- | cut -d \] -f 1)

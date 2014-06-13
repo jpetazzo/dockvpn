@@ -14,7 +14,7 @@ rsync -avH --rsync-path="sudo rsync" userWithSudo@dockerHost:<directoryFromScrip
 ```
 or
 ```bash
-docker run -rm --volumes-from OpenVPN-Config busybox tar cvf - /etc/openvpn/ \
+docker run --rm --volumes-from OpenVPN-Config busybox tar cvf - /etc/openvpn/ \
     | ssh mobile@jailBrokeniPhone "mkdir OpenVPN-Config; tar -xvf - -C OpenVPN-Config/"
 ```
 
