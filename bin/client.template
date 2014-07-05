@@ -1,0 +1,19 @@
+client
+dev tun
+nobind
+resolv-retry infinite
+persist-key
+persist-tun
+
+cipher BF-CBC
+comp-lzo
+passtos
+mssfix
+verb 3
+
+redirect-gateway def1
+
+ca ca.crt
+cert ${CLIENTNAME}.crt
+key ${CLIENTNAME}.key
+tls-auth ta.key 1

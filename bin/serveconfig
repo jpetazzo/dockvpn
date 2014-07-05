@@ -1,14 +1,14 @@
 #!/bin/sh
 cd /etc/openvpn
 
-[ -f client.http ] || {
+ls client*ovpn | cut -d \. -f 2 || {
     echo "Please run the OpenVPN container at least once in normal mode,"
     echo "to generate the client configuration file. Thank you."
     exit 1
 }
 
-echo "https://$(curl -s http://myip.enix.org/REMOTE_ADDR):8080/"
+echo "https://$(curl -s http://myip.enix.org/REMOTE_ADDR):8080/<clientName>.ovpn"
 socat -d -d \
     OPENSSL-LISTEN:8080,fork,reuseaddr,key=key.pem,certificate=cert.pem,verify=0 \
-    EXEC:'cat client.http' \
+    EXEC:'printCombined.config.sh' \
     2>> http8080.log

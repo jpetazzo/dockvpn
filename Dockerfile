@@ -1,8 +1,8 @@
-FROM ubuntu:precise
-RUN echo deb http://archive.ubuntu.com/ubuntu/ precise main universe > /etc/apt/sources.list.d/precise.list
+FROM ubuntu:trusty
+MAINTAINER randall@mason.ch
+
 RUN apt-get update -q
-RUN apt-get install -qy openvpn iptables socat curl
+RUN apt-get install -qy openvpn iptables socat zip easy-rsa curl gettext-base miniupnpc
 ADD ./bin /usr/local/sbin
-VOLUME /etc/openvpn
-EXPOSE 443/tcp 1194/udp 8080/tcp
-CMD run
+
+CMD ["/usr/local/sbin/run"]
