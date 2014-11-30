@@ -15,7 +15,7 @@ chmod 600 key.pem
 [ -f csr.pem ] ||
     openssl req -new -key key.pem -out csr.pem -subj /CN=OpenVPN/
 [ -f cert.pem ] ||
-    openssl x509 -req -in csr.pem -out cert.pem -signkey key.pem -days 36525
+    openssl x509 -req -in csr.pem -out cert.pem -signkey key.pem -days 24855
 
 [ -f tcp443.conf ] || cat >tcp443.conf <<EOF
 server 192.168.255.0 255.255.255.128
