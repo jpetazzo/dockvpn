@@ -1,11 +1,16 @@
 #!/bin/sh
 cd /etc/openvpn
 
-[ -f client.http ] || {
+[ -f placeholder ] || {
     echo "Please run the OpenVPN container at least once in normal mode,"
     echo "to generate the client configuration file. Thank you."
     exit 1
 }
+
+while ! [ -f client.http ]; do
+    echo "Waiting for the other container to generate keys and config..."
+    sleep 3
+done
 
 echo "https://$(curl -s http://myip.enix.org/REMOTE_ADDR):8080/"
 socat -d -d \
