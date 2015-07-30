@@ -1,6 +1,10 @@
 #!/bin/sh
 cd /etc/openvpn
 
+# This is a very crude hack to help with race conditions, when starting
+# the conf generator and the conf server at the same time. See #19.
+sleep 1
+
 [ -f placeholder ] || {
     echo "Please run the OpenVPN container at least once in normal mode,"
     echo "to generate the client configuration file. Thank you."
