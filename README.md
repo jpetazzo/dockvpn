@@ -105,3 +105,10 @@ People have successfully used this VPN server with clients such as:
 - Viscosity on OSX (#25),
 - Tunnelblick on OSX,
 - (some VPN client on Android but I can't remember which).
+
+
+## Other related/interesting projects
+
+- @besn0847/[alpinevpn](https://github.com/besn0847/alpinevpn), a smaller
+  image based on the Alpine distribution
+  
