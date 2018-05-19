@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:bionic
 RUN apt-get update -q
 RUN apt-get install -qy openvpn iptables socat curl
 ADD ./bin /usr/local/sbin
