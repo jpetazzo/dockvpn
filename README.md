@@ -15,8 +15,7 @@ to re-download the configuration, or to download it to multiple devices.
 
 The file can be used immediately as an OpenVPN profile. It embeds all the
 required configuration and credentials. It has been tested successfully on
-Linux, Windows, and Android clients. If you can test it on OS X and iPhone,
-let me know!
+Linux, Windows, and Android/iOS clients. 
 
 **Note:** there is a [bug in the Android Download Manager](
 http://code.google.com/p/android/issues/detail?id=3492) which prevents
@@ -104,6 +103,7 @@ People have successfully used this VPN server with clients such as:
 - OpenVPN on Linux,
 - Viscosity on OSX (#25),
 - Tunnelblick on OSX,
+- OpenVPN Connect on iOS,
 - (some VPN client on Android but I can't remember which).
 
 
