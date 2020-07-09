@@ -10,7 +10,7 @@ cd /etc/openvpn
 # This file tells `serveconfig` that there is a config there
 touch placeholder
 [ -f dh.pem ] ||
-    openssl dhparam -out dh.pem 1024
+    openssl dhparam -out dh.pem 2048
 [ -f key.pem ] ||
     openssl genrsa -out key.pem 2048
 chmod 600 key.pem
