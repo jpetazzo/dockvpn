@@ -63,8 +63,9 @@ is rooted.
 The topology used is `net30`, because it works on the widest range of OS.
 `p2p`, for instance, does not work on Windows.
 
-The TCP server uses `192.168.255.0/25` and the UDP server uses
-`192.168.255.128/25`.
+The TCP by default server uses `192.168.255.0/25` and the UDP server uses
+`192.168.255.128/25`. You can override subnet (three octets, for now you can't override mask) by `SUBNET` variable.  
+For example `docker run -d --privileged -p 1194:1194/udp -p 443:443/tcp -e SUBNET=192.168.13 jpetazzo/dockvpn`
 
 The client profile specifies `redirect-gateway def1`, meaning that after
 establishing the VPN connection, all traffic will go through the VPN.
