@@ -1,3 +1,14 @@
+# ⚠️  WARNING
+
+This repository is quite old, and it's likely that there are better
+alternatives these days. The original author (@jpetazzo) is not
+maintaining it anymore, and cannot provide help or support with it.
+That being said, if you feel brave, feel free to try it; but keep
+in mind that it hasn't received significant updates since 2016.
+
+Thank you!
+
+
 # OpenVPN for Docker
 
 Quick instructions:
