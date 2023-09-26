@@ -1,0 +1,21 @@
+name: Automated Build
+
+on:
+  # workflow_dispatch is optional.
+  # It lets you trigger the workflow manually from GitHub's web UI.
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    # Or, to build on tag pushes :
+    #tags:
+    #  - '*'
+
+jobs:
+  automated-build:
+    uses: jpetazzo/workflows/.github/workflows/automated-build.yaml@main
+    secrets:
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+    with:
+      #DOCKER_HUB_USERNAME: myuser
+      PLATFORMS: linux/amd64,linux/arm64
