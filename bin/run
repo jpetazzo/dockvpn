@@ -1,6 +1,7 @@
 #!/bin/sh
 
-VPN_SUBNET="${SUBNET:-192.168.255}" # You can override subnet of VPN
+# The subnet can be overridden with an environment variable
+VPN_SUBNET="${SUBNET:-192.168.255}"
 
 set -e
 
